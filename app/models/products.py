@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 class Products(SQLModel, table=True):
     product_id: int | None = Field(default=None, primary_key=True)
-    sku: str = Field(index=True)
+    sku: str = Field(index=True, unique=True)
     product_name: str = Field(unique=True, index=True)
     product_category_id: int | None = Field(
         foreign_key="productcategory.category_id", ondelete="SET NULL"

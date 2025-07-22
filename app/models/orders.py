@@ -50,6 +50,7 @@ class Order(SQLModel, table=True):
     order_status: OrderStatus
     payment_method: PaymentMethod
     total_order: float
+    shipper_token: int | None = None
 
     # Model Relationships
     client: 'User' = Relationship(back_populates="orders")
