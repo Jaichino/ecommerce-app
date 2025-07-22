@@ -31,6 +31,7 @@ class User(SQLModel, table=True):
     user_id: int | None = Field(default=None, primary_key=True)
     firstname: str
     lastname: str = Field(index=True)
+    user_dni: int = Field(unique=True)
     user_email: str = Field(unique=True)
     hash_password: str
     is_active: bool = True
@@ -47,8 +48,7 @@ class User(SQLModel, table=True):
 class UserAddress(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.user_id", unique=True, ondelete="CASCADE")
-    user_dni: int = Field(unique=True)
-    user_contact: str | None = None
+    phone_number: str | None = Field(default=None, unique=True)
     user_address: str = Field(unique=True)
     city: str
     province: str
