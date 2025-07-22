@@ -8,7 +8,7 @@
 
 from typing import TYPE_CHECKING
 from sqlmodel import SQLModel, Field, Relationship
-
+from sqlalchemy import UniqueConstraint
 from app.models.order_detail import OrderDetail
 from app.models.cart_detail import CartDetail
 
@@ -53,6 +53,10 @@ class ProductVariant(SQLModel, table=True):
     color: str = Field(index=True)
     stock: int
     price: float
+
+    __table_args__ = (
+        UniqueConstraint("product_id", "size", "color"),
+    )
 
     # Model Relationships
     orders: list['Order'] = Relationship(back_populates="products", link_model=OrderDetail)
