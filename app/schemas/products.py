@@ -75,7 +75,7 @@ class ProductBasePublic(BaseModel):
 
 class ProductVariantPublic(BaseModel):
     variant_id: int
-    product_name: str
+    product_id: int
     size: str | None
     color: str
     stock: int
