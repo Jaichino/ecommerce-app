@@ -19,7 +19,7 @@ class UserCreate(BaseModel):
     firstname: str
     lastname: str
     user_dni: int
-    email: EmailStr
+    user_email: EmailStr
     password: str
     role: UserRole
     shipper_id: int | None = None
@@ -62,7 +62,17 @@ class UserAddressUpdate(BaseModel):
 ###################################################################################################
 # Response Schemas
 
+class UserPublic(BaseModel):
+    user_id: int
+    firstname: str
+    lastname: str
+    user_dni: int
+    user_email: str
+    is_active: bool
+
+
 class UserAddressPublic(BaseModel):
+    user_id: int
     phone_number: str | None
     user_address: str
     city: str
@@ -72,12 +82,13 @@ class UserAddressPublic(BaseModel):
     apartment: str | None
 
 
-class UserPublic(BaseModel):
+class FullUserPublic(BaseModel):
     user_id: int
     firstname: str
     lastname: str
     user_dni: int
-    email: str
+    user_email: str
+    is_active: bool
     address: UserAddressPublic | None
 
 ###################################################################################################

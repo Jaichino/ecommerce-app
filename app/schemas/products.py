@@ -23,7 +23,6 @@ class ProductBaseCreate(BaseModel):
 
 
 class ProductVariantCreate(BaseModel):
-    product_id: int
     size: str | None = Field(max_length=4)
     color: str
     quantity: int
@@ -39,10 +38,15 @@ class CategoryCreate(BaseModel):
 
 
 class ProductUpdate(BaseModel):
-    sku: str | None = None
     product_name: str | None = None
     product_category_id: int | None = None
     available: bool | None = None
+
+    model_config = {"extra": "forbid"}
+
+
+class CategoryUpdate(BaseModel):
+    category: str | None = None
 
     model_config = {"extra": "forbid"}
 
@@ -61,9 +65,17 @@ class ProductVariantUpdate(BaseModel):
 ###################################################################################################
 # Response Schemas
 
+class ProductBasePublic(BaseModel):
+    product_id: int
+    sku: str
+    product_name: str
+    product_category_id: int
+    available: bool
+
+
 class ProductVariantPublic(BaseModel):
     variant_id: int
-    product_name: str
+    product_id: int
     size: str | None
     color: str
     stock: int
@@ -72,10 +84,10 @@ class ProductVariantPublic(BaseModel):
 
 class CategoryPublic(BaseModel):
     category_id: int
-    category_name: str
+    category: str
 
 
-class ProductBasePublic(BaseModel):
+class FullProductPublic(BaseModel):
     product_id: int
     sku: str
     product_name: str
