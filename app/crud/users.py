@@ -15,7 +15,7 @@ from app.schemas.users import (
     UserCreate, CreateUserAddress, UserUpdate, UserAddressUpdate, UserPublic, UserAddressPublic,
     FullUserPublic
 )
-
+from app.exceptions import UserNotFoundError, UserAlreadyExistsError
 
 ###################################################################################################
 
@@ -28,7 +28,7 @@ class UsersCrud():
     ###############################################################################################
     # Create
 
-    def create_user(session: Session, user_create: UserCreate) -> UserPublic | None:
+    def create_user(session: Session, user_create: UserCreate) -> UserPublic:
         
         """
         Creates a new user in database by passing the user information (firstname, lastname, dni, 
@@ -41,9 +41,19 @@ class UsersCrud():
             user_create (UserCreate): Data to create a new user.
         
         Returns:
-            A UserPublic or None if there was any problem, like an existing email or dni number
+            UserPublic: A UserPublic object.
         """
         
+        # Verify if the user email exists, raise an exception if the email already exists
+        email_exists = UsersCrud.get_user_by_email(session, user_email=user_create.user_email)
+        if email_exists:
+            raise UserAlreadyExistsError(field="email")
+
+        # Verify if the user_dni exists, raise an exception if the dni already exists
+        dni_exists = UsersCrud.get_user_by_dni(session, user_dni=user_create.user_dni)
+        if dni_exists:
+            raise UserAlreadyExistsError(field="dni")
+
         # Get the plain password from user_create
         plain_password = user_create.password
 
@@ -73,10 +83,9 @@ class UsersCrud():
             # Return the UserPublic
             return user_public
 
-        except IntegrityError:
-            # Rollback if there's an integrity error (existing email, dni, etc..)
+        except Exception as e:
             session.rollback()
-            return None
+            raise e
 
 
     @staticmethod
@@ -84,7 +93,7 @@ class UsersCrud():
         session: Session, 
         user_id: int, 
         user_address: CreateUserAddress
-    ) -> UserAddress | None:
+    ) -> UserAddressPublic:
         
         """
         Adds address information of a user, passing their phone number, address, city, province,
@@ -96,22 +105,22 @@ class UsersCrud():
             user_address (CreateUserAddress): Information of the user's address.
         
         Returns:
-            A UserAddress object or None if user_id couldn't match any user.
+            UserAddressPublic: A UserAddressPublic object.
         """
 
-        # Find a User with the user_id, return None if there's no user
+        # Find a User with the user_id, raise exception if there's no user
         user = session.get(User, user_id)
-
         if not user:
-            return None
-        
-        # Create and return an user address
+            raise UserNotFoundError(user_id=user_id)
+
+        # Create the user address
         useraddress_db = UserAddress.model_validate(user_address)
         session.add(useraddress_db)
         session.commit()
         session.refresh(useraddress_db)
 
-        return useraddress_db
+        # Return a UserAddressPublic
+        return UserAddressPublic.model_validate(useraddress_db)
 
     ###############################################################################################
 
@@ -120,7 +129,7 @@ class UsersCrud():
     # Read
     
     @staticmethod
-    def get_user_by_dni(session: Session, user_dni: int) -> FullUserPublic | None:
+    def get_user_by_dni(session: Session, user_dni: int) -> FullUserPublic:
 
         """
         Gets a user's information passing their dni number.
@@ -130,7 +139,7 @@ class UsersCrud():
             user_dni (int): The user's dni number.
         
         Returns:
-            A FullUserPublic object or None if the dni couldn't match any user.
+            FullUserPublic: A FullUserPublic object.
         """
 
         # Get the user
@@ -140,9 +149,9 @@ class UsersCrud():
             .where(User.user_dni == user_dni)
         ).first()
 
-        # Return None if there is no user with the user_dni
+        # Raise exception if there is no user with the user_dni
         if not user:
-            return None
+            raise UserNotFoundError(user_dni=user_dni)
         
         # Get the user's address
         user_address = user.user_address
@@ -165,7 +174,7 @@ class UsersCrud():
 
 
     @staticmethod
-    def get_user_by_email(session: Session, user_email: str) -> FullUserPublic | None:
+    def get_user_by_email(session: Session, user_email: str) -> FullUserPublic:
 
         """
         Gets a user's information passing their email.
@@ -175,7 +184,7 @@ class UsersCrud():
             user_email (str): The user's email.
         
         Returns:
-            A FullUserPublic object or None if the email couldn't match any user.
+            FullUserPublic: A FullUserPublic object.
         """
 
         # Get the user
@@ -185,9 +194,9 @@ class UsersCrud():
             .where(User.user_email == user_email)
         ).first()
 
-        # Return None if there is no user with the user_email
+        # Raise exception if there is no user with the user_email
         if not user:
-            return None
+            raise UserNotFoundError(user_email=user_email)
         
         # Get the user's address
         user_address = user.user_address
@@ -219,7 +228,7 @@ class UsersCrud():
         session: Session,
         user_id: int, 
         user_update: UserUpdate
-    ) -> UserPublic | None:
+    ) -> UserPublic:
         
         """
         Updates a user's information, like firstname, lastname or password.
@@ -230,15 +239,15 @@ class UsersCrud():
             user_update (UserUpdate): Data of the user to be modified.
         
         Returns:
-            A UserPublic object or None if the user_id couldn't match any user.
+            UserPublic: A UserPublic object.
         """
 
         # Get the user to update
         user_to_update = session.get(User, user_id)
 
-        # Return None if there's no User with the user_id
+        # Raise exception if there's no User with the user_id
         if not user_to_update:
-            return None
+            raise UserNotFoundError(user_id=user_id)
         
         # Update the user
         user_to_update.sqlmodel_update(user_update)
@@ -257,7 +266,7 @@ class UsersCrud():
         session: Session, 
         user_id: int, 
         address_update: UserAddressUpdate
-    ) -> UserAddressPublic | None:
+    ) -> UserAddressPublic:
         
         """
         Updates a user's address passing the fields to be modified, like phone number, address, city,
@@ -269,7 +278,7 @@ class UsersCrud():
             address_update (UserAddressUpdate): Data of the address to be updated.
         
         Returns:
-            A UserAddressPublic object or None if there is no address information asociated at the user_id
+            UserAddressPublic: A UserAddressPublic object associated to a user with the given user_id.
         """
         
         # Get the address with user_id
@@ -277,9 +286,9 @@ class UsersCrud():
             select(UserAddress).where(UserAddress.user_id == user_id)
         ).first()
 
-        # Return None if there's no address asociated to that user_id
+        # Raise exception if there's no address asociated to that user_id
         if not user_address:
-            return None
+            raise UserNotFoundError(user_id=user_id)
         
         # Update the user information
         user_address.sqlmodel_update(address_update)
@@ -294,7 +303,7 @@ class UsersCrud():
 
 
     @staticmethod
-    def deactivate_user(session: Session, user_id: int) -> UserPublic | None:
+    def deactivate_user(session: Session, user_id: int) -> UserPublic:
 
         """
         Makes a passive delete of a user, turning is_active field to False.
@@ -304,15 +313,15 @@ class UsersCrud():
             user_id (int): The user's id.
         
         Returns:
-            A UserPublic or None if user_id couldn't match any user.
+            UserPublic: A UserPublic object.
         """
 
         # Gets the user
         user = session.get(User, user_id)
 
-        # Return None if user_id couldn't find a user
+        # Raise exception if user_id couldn't find a user
         if not user:
-            return None
+            raise UserNotFoundError(user_id=user_id)
         
         # Update the is_active field
         user.is_active = False
@@ -329,7 +338,7 @@ class UsersCrud():
 
 
     @staticmethod
-    def reactivate_user(session: Session, user_id: int) -> UserPublic | None:
+    def reactivate_user(session: Session, user_id: int) -> UserPublic:
 
         """
         Reactivates a user updating the is_active field to True.
@@ -339,15 +348,15 @@ class UsersCrud():
             user_id (int): The user's id.
         
         Returns:
-            A UserPublic or None if user_id couldn't match any user.
+            UserPublic: A UserPublic object.
         """
 
         # Gets the user
         user = session.get(User, user_id)
 
-        # Return None if user_id couldn't find a user
+        # Raise exception if user_id couldn't find a user
         if not user:
-            return None
+            raise UserNotFoundError(user_id=user_id)
         
         # Update the is_active field
         user.is_active = True

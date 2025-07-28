@@ -50,7 +50,7 @@ class ProductCrud():
         # Verify if the product_category_id exists
         category = session.get(ProductCategory, product_db.product_category_id)
         if not category:
-            raise CategoryNotFoundError
+            raise CategoryNotFoundError(category_id=product_db.product_category_id)
 
         # Verify if the product already exists in database
         product_exists = ProductCrud.get_base_product_by_sku(session, product_db.sku)
@@ -124,7 +124,7 @@ class ProductCrud():
 
         # Raise exception if the product doesn't exist (not match the sku)
         if not product:
-            raise ProductNotFoundError
+            raise ProductNotFoundError(sku=sku)
 
         # Validate the ProductVariantCreate as a ProductVariant, adding product_id
         variant_db = ProductVariant(**product_variant.model_dump(), product_id=product.product_id)
@@ -189,7 +189,7 @@ class ProductCrud():
 
         # Raise exception if the sku couldn't find any product
         if not product:
-            raise ProductNotFoundError
+            raise ProductNotFoundError(sku=sku)
         
         # Generate a ProductBasePublic and return it
         product_public = ProductBasePublic.model_validate(product)
@@ -223,7 +223,7 @@ class ProductCrud():
 
         # Raise exception if the sku doesn't match with any products
         if not product:
-            raise ProductNotFoundError
+            raise ProductNotFoundError(sku=sku)
 
         # Get the product's variants (list[ProductVariant])
         variants = product.variants
@@ -398,7 +398,7 @@ class ProductCrud():
 
         # Raise exception if the sku couldn't get a product
         if not product_to_update:
-            raise ProductNotFoundError
+            raise ProductNotFoundError(sku=sku)
         
         # Update the product
         product_to_update.sqlmodel_update(product_update)
@@ -438,7 +438,7 @@ class ProductCrud():
 
         # Raise exception if couldn't get the category
         if not category_to_update:
-            raise CategoryNotFoundError
+            raise CategoryNotFoundError(category_id=category_id)
         
         # Update the category
         category_to_update.sqlmodel_update(category_update)
@@ -475,7 +475,7 @@ class ProductCrud():
 
         # Raise exception if variant_id couldn't match any variant
         if not variant_to_update:
-            raise ProductVariantNotFoundError
+            raise ProductVariantNotFoundError(variant_id=variant_id)
         
         # Update the product and return it
         variant_to_update.sqlmodel_update(variant_update)
@@ -506,7 +506,7 @@ class ProductCrud():
 
         # Raise exception if the sku couldn't match any product
         if not product:
-            raise ProductNotFoundError
+            raise ProductNotFoundError(sku=sku)
         
         # Deactivate the product turning available field to False
         product.available = False
@@ -543,7 +543,7 @@ class ProductCrud():
 
         # Raise exception if the sku couldn't match any product
         if not product:
-            raise ProductNotFoundError
+            raise ProductNotFoundError(sku=sku)
         
         # Reactivate the product turning available field to True
         product.available = True
@@ -585,7 +585,7 @@ class ProductCrud():
 
         # Raise exception if the sku couldn't match any product
         if not product_to_delete:
-            raise ProductNotFoundError
+            raise ProductNotFoundError(sku=sku)
 
         # Delete the product
         session.delete(product_to_delete)
@@ -616,7 +616,7 @@ class ProductCrud():
 
         # Raise exception if category_id couldn't match any category
         if not category_to_delete:
-            raise CategoryNotFoundError
+            raise CategoryNotFoundError(category_id=category_id)
         
         # Delete the category
         session.delete(category_to_delete)
@@ -645,7 +645,7 @@ class ProductCrud():
 
         # Raise exception if variant_id couldn't match any variant
         if not variant_to_delete:
-            raise ProductVariantNotFoundError
+            raise ProductVariantNotFoundError(variant_id=variant_id)
         
         # Delete and return the variant
         session.delete(variant_to_delete)
