@@ -28,33 +28,49 @@ class ProductCrud():
     # Create
 
     @staticmethod
-    def create_product_base(session: Session, product_in: ProductBaseCreate) -> Products | None:
+    def create_product_base(
+        session: Session, product_in: ProductBaseCreate
+    ) -> ProductBasePublic | None:
 
         """
-        Creates a new base product.
-        If a product with the passed sku already exists, then the product won't be added.
+        Creates a new base product. If a product with the passed SKU already exists and it's not
+        available then reactivates it by setting 'available=True'. If it's already available, then
+        return it.
         
         Args:
             session (Session): The SQLModel session to interact with the database.
             product_in (ProductBaseCreate): Data for the product to be created.
 
         Returns:
-            (Products | None): The created base product, or None if the base product already
-            exists.
+            A ProductBasePublic object.
         """
 
         # Validate the ProductBaseCreate as Products
         product_db = Products.model_validate(product_in)
+
+        # Verify if the product already exists in database
+        product_exists = ProductCrud.get_base_product_by_sku(session, product_db.sku)
+
+        # If the product exists and is not available, then reactive it.
+        if product_exists and product_exists.available is False:
+            return ProductCrud.reactivate_product(session, product_db.sku)
+        
+        # If the product exists and is available, then return it.
+        if product_exists and product_exists.available is True:
+            return product_exists
 
         try:
             # Add product_db to the session and commit, then return the created product
             session.add(product_db)
             session.commit()
             session.refresh(product_db)
-            return product_db
+
+            # Create and return a ProductBasePublic
+            product_public = ProductBasePublic.model_validate(product_db)
+
+            return product_public
 
         except IntegrityError:
-            # Rollback and return None if there's an IntegrityError (product already exists)
             session.rollback()
             return None
 
@@ -139,10 +155,41 @@ class ProductCrud():
     # Read
 
     @staticmethod
-    def get_product_by_sku(
+    def get_base_product_by_sku(
         session: Session,
-        sku: str,
-        available: bool = True
+        sku: str
+    ) -> ProductBasePublic | None:
+        
+        """
+        Gets a ProductBasePublic available or not by passing the product's sku.
+
+        Args:
+            session (Session): The SQLModel session to interact with the database.
+            sku (str): The SKU of the base product.
+
+        Returns:
+            A ProductBasePublic or None if the sku couldn't match any product.
+        """
+        
+        # Get the product with the sku
+        product = session.exec(
+            select(Products).where(Products.sku == sku)
+        ).first()
+
+        # Return None if the sku couldn't find any product
+        if not product:
+            return None
+        
+        # Generate a ProductBasePublic and return it
+        product_public = ProductBasePublic.model_validate(product)
+
+        return product_public
+
+
+    @staticmethod
+    def get_full_product_by_sku(
+        session: Session,
+        sku: str
     ) -> FullProductPublic | None:
         
         """
@@ -151,7 +198,6 @@ class ProductCrud():
         Args:
             session (Session): The SQLModel session to interact with the database.
             sku (str): The SKU of the base product.
-            available (bool): True if the product is available, False if not.
 
         Returns:
             (FullProductPublic | None): A FullProductPublic. None if the sku couldn't match
@@ -162,7 +208,7 @@ class ProductCrud():
         # Get the product with the sku
         product = session.exec(
             select(Products)
-            .where(Products.sku == sku, Products.available == available)
+            .where(Products.sku == sku)
             .options(selectinload(Products.variants), selectinload(Products.category))
         ).first()
 
@@ -301,7 +347,7 @@ class ProductCrud():
     def get_categories(session: Session) -> list[ProductCategory] | None:
 
         """
-        Get all the existant product categories. If there is no category, return None.
+        Get all the existing product categories. If there is no category, return None.
         """
 
         # Get all the categories ordered by name
@@ -430,6 +476,79 @@ class ProductCrud():
         session.refresh(variant_to_update)
 
         return variant_to_update
+
+
+    @staticmethod
+    def deactivate_product(session: Session, sku: str) -> ProductBasePublic | None:
+        
+        """
+        Deactivates a base product turning the available field to False.
+
+        Args:
+            session (Session): The SQLModel session to interact with the database.
+            sku (str): The product's sku.
+        
+        Returns:
+            A ProductBasePublic or None if the sku couldn't get any product.
+        """
+        # Get the product
+        product = session.exec(
+            select(Products).where(Products.sku == sku)
+        ).first()
+
+        # Return None if the sku couldn't match any product
+        if not product:
+            return None
+        
+        # Deactivate the product turning available field to False
+        product.available = False
+
+        # Commit changes
+        session.add(product)
+        session.commit()
+        session.refresh(product)
+
+        # Create and return a ProductBasePublic
+        product_public = ProductBasePublic.model_validate(product)
+
+        return product_public
+    
+
+    @staticmethod
+    def reactivate_product(session: Session, sku: str) -> ProductBasePublic | None:
+        
+        """
+        Reactivates a base product turning the available field to True.
+
+        Args:
+            session (Session): The SQLModel session to interact with the database.
+            sku (str): The product's sku.
+        
+        Returns:
+            A ProductBasePublic or None if the sku couldn't get any product.
+        """
+
+        # Get the product
+        product = session.exec(
+            select(Products).where(Products.sku == sku)
+        ).first()
+
+        # Return None if the sku couldn't match any product
+        if not product:
+            return None
+        
+        # Reactivate the product turning available field to True
+        product.available = True
+
+        # Commit changes
+        session.add(product)
+        session.commit()
+        session.refresh(product)
+
+        # Create and return a ProductBasePublic
+        product_public = ProductBasePublic.model_validate(product)
+
+        return product_public
 
     ###############################################################################################
 

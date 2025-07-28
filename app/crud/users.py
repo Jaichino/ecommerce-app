@@ -41,7 +41,7 @@ class UsersCrud():
             user_create (UserCreate): Data to create a new user.
         
         Returns:
-            A UserPublic or None if there was any problem, like an existant email or dni number
+            A UserPublic or None if there was any problem, like an existing email or dni number
         """
         
         # Get the plain password from user_create
@@ -74,7 +74,7 @@ class UsersCrud():
             return user_public
 
         except IntegrityError:
-            # Rollback if there's an integrity error (existant email, dni, etc..)
+            # Rollback if there's an integrity error (existing email, dni, etc..)
             session.rollback()
             return None
 
