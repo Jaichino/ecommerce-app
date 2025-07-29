@@ -17,7 +17,7 @@ from pydantic import BaseModel, EmailStr
 class ShipperCreate(BaseModel):
     shipper_name: str
     shipper_email: EmailStr
-    shipper_phone_number: str
+    shipper_phone_number: str | None = None
 
     model_config = {"extra":"forbid"}
 
