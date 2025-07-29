@@ -61,3 +61,14 @@ class UserNotFoundError(Exception):
 
 
         super().__init__(self.mensaje)
+
+
+###################################################################################################
+#                                      SHIPPERS EXCEPTIONS                                        # 
+###################################################################################################
+
+class ShipperNotFoundError(Exception):
+    def __init__(self, shipper_id: int):
+        self.shipper_id = shipper_id
+        self.mensaje = f"Shipper with shipper_id '{self.shipper_id}' not found!"
+        super().__init__(self.mensaje)
