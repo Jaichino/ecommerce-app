@@ -23,7 +23,7 @@ class Shipper(SQLModel, table=True):
     shipper_id: int | None = Field(default=None, primary_key=True)
     shipper_name: str
     shipper_email: str
-    shipper_contact: str | None = None
+    shipper_phone_number: str | None = None
 
     # Model Relationships
     orders_shipper: list['Order'] = Relationship(back_populates="shipper")
