@@ -10,21 +10,21 @@
 class CategoryNotFoundError(Exception):
     def __init__(self, category_id: int):
         self.category_id = category_id
-        self.mensaje = f"Category with category_id = {self.category_id} not exists!"
+        self.mensaje = f"Category with category_id '{self.category_id}' not found!"
         super().__init__(self.mensaje)
 
 
 class ProductNotFoundError(Exception):
     def __init__(self, sku: str):
         self.sku = sku
-        self.mensaje = f"Product with sku = {self.sku} not found!"
+        self.mensaje = f"Product with sku '{self.sku}' not found!"
         super().__init__(self.mensaje)
 
 
 class ProductVariantNotFoundError(Exception):
     def __init__(self, variant_id: int):
         self.variant_id = variant_id
-        self.mensaje = f"Variant with variant_id = {self.variant_id} not found!"
+        self.mensaje = f"Variant with variant_id '{self.variant_id}' not found!"
         super().__init__(self.mensaje)
 
 
