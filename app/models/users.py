@@ -12,7 +12,6 @@ from enum import Enum
 
 if TYPE_CHECKING:
     from app.models.orders import Order
-    from app.models.cart import Cart
     from app.models.shippers import Shipper
 
 ###################################################################################################
@@ -41,7 +40,6 @@ class User(SQLModel, table=True):
     # Model Relationships
     orders: list['Order'] = Relationship(back_populates="client")
     user_address: 'UserAddress' = Relationship(back_populates="user", cascade_delete=True)
-    user_cart: 'Cart' = Relationship(back_populates="user")
     shipper: 'Shipper' = Relationship(back_populates="users")
 
 
