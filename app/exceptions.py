@@ -28,6 +28,12 @@ class ProductVariantNotFoundError(Exception):
         super().__init__(self.mensaje)
 
 
+class InsufficientStockError(Exception):
+    def __init__(self, variant_id: int):
+        self.variant_id = variant_id
+        self.mensaje = f"Insufficient stock for product '{self.variant_id}'"
+        super().__init__(self.mensaje)
+
 ###################################################################################################
 #                                         USERS EXCEPTIONS                                        # 
 ###################################################################################################
@@ -61,3 +67,33 @@ class UserNotFoundError(Exception):
 
 
         super().__init__(self.mensaje)
+
+
+###################################################################################################
+#                                      SHIPPERS EXCEPTIONS                                        # 
+###################################################################################################
+
+class ShipperNotFoundError(Exception):
+    def __init__(self, shipper_id: int):
+        self.shipper_id = shipper_id
+        self.mensaje = f"Shipper with shipper_id '{self.shipper_id}' not found!"
+        super().__init__(self.mensaje)
+
+
+###################################################################################################
+#                                       ORDERS EXCEPTIONS                                         # 
+###################################################################################################
+
+class OrderNotFoundError(Exception):
+    def __init__(self, order_id: int):
+        self.order_id = order_id
+        self.mensaje = f"Order with id '{self.order_id}' not found!"
+        super().__init__(self.mensaje)
+
+
+class InvalidShipperTokenError(Exception):
+    def __init__(self, token: int):
+        self.token = token
+        self.mensaje = f"Token '{self.token}' is invalid!"
+        super().__init__(self.mensaje)
+

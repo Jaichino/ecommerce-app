@@ -14,7 +14,10 @@ from app.schemas.products import (
     ProductBaseCreate, ProductVariantCreate, CategoryCreate, ProductBasePublic, CategoryPublic,
     ProductVariantPublic, ProductUpdate, FullProductPublic, ProductVariantUpdate, CategoryUpdate
 )
-from app.exceptions import CategoryNotFoundError, ProductNotFoundError, ProductVariantNotFoundError
+from app.exceptions import (
+    CategoryNotFoundError, ProductNotFoundError, ProductVariantNotFoundError, 
+    InsufficientStockError
+)
 
 ###################################################################################################
 
@@ -349,6 +352,35 @@ class ProductCrud():
 
 
     @staticmethod
+    def get_variant_info(session: Session, variant_id: int) -> ProductVariant:
+
+        """
+        Gets a product variant info.
+
+        Args:
+            session (Session): The SQLModel session to interact with the database.
+            variant_id (int): The product variant's id
+        
+        Returns:
+            ProductVariant: The product variant's information.
+        """
+
+        # Get the variant
+        variant = session.exec(
+            select(ProductVariant)
+            .options(selectinload(ProductVariant.prod))
+            .where(ProductVariant.variant_id == variant_id)
+        ).first()
+
+        # Raise exception if variant_id couldn't get any variant
+        if not variant:
+            raise ProductVariantNotFoundError(variant_id=variant_id)
+
+        # Return the ProductVariant
+        return variant
+
+
+    @staticmethod
     def get_categories(session: Session) -> list[ProductCategory] | None:
 
         """
@@ -557,6 +589,34 @@ class ProductCrud():
         product_public = ProductBasePublic.model_validate(product)
 
         return product_public
+    
+
+    @staticmethod
+    def substract_product(session: Session, variant_id: int, quantity_substracted: int):
+
+        """
+        Discount the quantity sold of a product.
+
+        Args:
+            session (Session): The SQLModel session to interact with the database.
+            variant_id (int): The variant's id.
+            quantity_substracted (int): The quantity sold of the product.
+        """
+
+        # Get the variant
+        variant = session.get(ProductVariant, variant_id)
+
+        # Raise exception if there's no variant
+        if not variant:
+            raise ProductVariantNotFoundError(variant_id=variant_id)
+        
+        # Raise exception if stock < quantity_substracted
+        if variant.stock < quantity_substracted:
+            raise InsufficientStockError(variant_id=variant_id)
+
+        # Update the variant stock
+        variant.stock -= quantity_substracted
+        session.add(variant)
 
     ###############################################################################################
 

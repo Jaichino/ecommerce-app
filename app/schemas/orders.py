@@ -10,7 +10,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 from app.models.orders import OrderStatus, PaymentMethod
 from app.schemas.shippers import ShipperPublic
-from app.schemas.users import UserPublic
+from app.schemas.users import FullUserPublic
 
 ###################################################################################################
 
@@ -26,11 +26,10 @@ class OrderDetailCreate(BaseModel):
 
 
 class OrderCreate(BaseModel):
-    client_id: int
     shipper_id: int | None = None
-    order_status: OrderStatus
+    order_status: OrderStatus = Field(default="pending")
     payment_method: PaymentMethod
-    order_details: list[OrderDetailCreate]
+    order_items: list[OrderDetailCreate]
 
     model_config = {"extra":"forbid"}
 
@@ -47,14 +46,6 @@ class OrderUpdate(BaseModel):
 ###################################################################################################
 # Response Schemas
 
-class OrderInfo(BaseModel):
-    order_id: int
-    created_at: datetime
-    status: str
-    payment_method: str
-    total_order: float
-
-
 class OrderDetailPublic(BaseModel):
     sku: str
     product_name: str
@@ -64,13 +55,25 @@ class OrderDetailPublic(BaseModel):
     price: float
 
 
-class OrderPublic(BaseModel):
-    user: UserPublic
-    shipper: ShipperPublic | None = None
-    order_info: OrderInfo
+class OrderInfo(BaseModel):
+    order_id: int
+    created_at: datetime
+    order_status: str
+    payment_method: str
+    total_order: float
+    shipper_id: int | None
+    shipper_token = int | None
     order_details: list[OrderDetailPublic]
 
-    # It will be a 4-digit random number
-    shipper_token: int | None
+
+class FullOrderPublic(BaseModel):
+    user: FullUserPublic
+    shipper: ShipperPublic | None = None
+    order_info: OrderInfo
+
+
+class ShippingStatus(BaseModel):
+    order_id: int
+    order_status: str
 
 ###################################################################################################
