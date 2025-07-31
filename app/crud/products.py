@@ -32,7 +32,7 @@ class ProductCrud():
     # Create
 
     @staticmethod
-    def create_product_base(session: Session, product_in: ProductBaseCreate) -> ProductBasePublic:
+    def create_product_base(session: Session, product_in: ProductBaseCreate) -> Products:
 
         """
         Creates a new base product. If a product with the passed SKU already exists and it's not
@@ -44,7 +44,7 @@ class ProductCrud():
             product_in (ProductBaseCreate): Data for the product to be created.
 
         Returns:
-            A ProductBasePublic object.
+            A Products object.
         """
 
         # Validate the ProductBaseCreate as Products
@@ -60,21 +60,19 @@ class ProductCrud():
 
         # If the product exists and is not available, then reactive it.
         if product_exists and product_exists.available is False:
-            return ProductCrud.reactivate_product(session, product_db.sku)
+            ProductCrud.reactivate_product(session, product_exists.sku)
         
         # If the product exists and is available, then return it.
         if product_exists and product_exists.available is True:
             return product_exists
 
-        # Add product_db to the session and commit, then return the created product
-        session.add(product_db)
-        session.commit()
-        session.refresh(product_db)
+        if not product_exists:
+            # Add product_db to the session and commit, then return the created product
+            session.add(product_db)
+            session.commit()
+            session.refresh(product_db)
 
-        # Create and return a ProductBasePublic
-        product_public = ProductBasePublic.model_validate(product_db)
-
-        return product_public
+            return product_db
 
 
     @staticmethod
@@ -172,7 +170,7 @@ class ProductCrud():
     def get_base_product_by_sku(
         session: Session,
         sku: str
-    ) -> ProductBasePublic:
+    ) -> Products | None:
         
         """
         Gets a ProductBasePublic available or not by passing the product's sku.
@@ -182,7 +180,7 @@ class ProductCrud():
             sku (str): The SKU of the base product.
 
         Returns:
-            A ProductBasePublic object.
+            A Products object or None if the sku couldn't match any product.
         """
         
         # Get the product with the sku
@@ -192,12 +190,10 @@ class ProductCrud():
 
         # Raise exception if the sku couldn't find any product
         if not product:
-            raise ProductNotFoundError(sku=sku)
+            return None
         
-        # Generate a ProductBasePublic and return it
-        product_public = ProductBasePublic.model_validate(product)
-
-        return product_public
+        # Return the product
+        return product
 
 
     @staticmethod
@@ -555,7 +551,7 @@ class ProductCrud():
     
 
     @staticmethod
-    def reactivate_product(session: Session, sku: str) -> ProductBasePublic:
+    def reactivate_product(session: Session, sku: str) -> Products:
         
         """
         Reactivates a base product turning the available field to True.
@@ -565,7 +561,7 @@ class ProductCrud():
             sku (str): The product's sku.
         
         Returns:
-            A ProductBasePublic.
+            A Products.
         """
 
         # Get the product
@@ -585,11 +581,9 @@ class ProductCrud():
         session.commit()
         session.refresh(product)
 
-        # Create and return a ProductBasePublic
-        product_public = ProductBasePublic.model_validate(product)
+        # Return the product
+        return product
 
-        return product_public
-    
 
     @staticmethod
     def substract_product(session: Session, variant_id: int, quantity_substracted: int):

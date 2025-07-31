@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 class ProductBaseCreate(BaseModel):
     sku: str
     product_name: str
-    category_id: int | None = None
+    product_category_id: int | None = None
 
     model_config = {"extra": "forbid"}
 
