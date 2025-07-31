@@ -235,6 +235,7 @@ class ProductCrud():
             product_id=product.product_id,
             sku=product.sku,
             product_name=product.product_name,
+            brand=product.brand,
             product_category=category,
             available=product.available,
             product_variants=[
@@ -335,6 +336,7 @@ class ProductCrud():
                 product_id=product.product_id,
                 sku=product.sku,
                 product_name=product.product_name,
+                brand=product.brand,
                 product_category=product.category.category,
                 available=product.available,
                 product_variants=[
