@@ -140,6 +140,8 @@ class ProductCrud():
 
         except IntegrityError:
 
+            session.rollback()
+
             # If the variant exists, then add quantity and update the price to the existing variant
             existent_variant = session.exec(
                 select(ProductVariant)
@@ -148,7 +150,7 @@ class ProductCrud():
                     ProductVariant.size == variant_db.size,
                     ProductVariant.color == variant_db.color
                 )
-            ).first()
+            ).one()
 
             # Add the quantity and actualice the price to the existing product
             existent_variant.stock += variant_db.stock
