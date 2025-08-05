@@ -15,7 +15,8 @@ from app.db.database import get_session
 
 
 from app.schemas.products import (
-    ProductBaseCreate, ProductBasePublic, ProductVariantPublic, ProductVariantCreate
+    ProductBaseCreate, ProductBasePublic, ProductVariantPublic, ProductVariantCreate,
+    ProductUpdate, FullProductPublic, CategoryCreate, CategoryPublic, CategoryUpdate
 )
 
 from app.crud.products import ProductCrud
@@ -105,7 +106,7 @@ async def create_base_product(
 ###################################################################################################
 # Create a new product variant
 @router.post(
-    "/{sku}",
+    "/{sku}/variants",
     summary="Creates a new product variant",
     response_model=ProductVariantPublic,
     status_code=status.HTTP_201_CREATED,
@@ -169,3 +170,71 @@ async def create_product_variant(
 
 ###################################################################################################
 
+###################################################################################################
+# GET ENDPOINTS
+
+###################################################################################################
+# Get one product
+@router.get(
+    "/{sku}",
+    response_model=FullProductPublic,
+    responses={
+        status.HTTP_200_OK:{
+            "description": "OK",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "product_id": 5,
+                        "sku": "SH0001",
+                        "product_name": "Cotton shirt",
+                        "brand": "Lacoste",
+                        "product_category": "Shirts",
+                        "available": True,
+                        "product_variants": [
+                            {
+                                "variant_id": 2,
+                                "product_id": 5,
+                                "size": "L",
+                                "color": "Black",
+                                "stock": 13,
+                                "price": 90000.0
+                            },
+                            {
+                                "variant_id": 10,
+                                "product_id": 5,
+                                "size": "L",
+                                "color": "Blue",
+                                "stock": 4,
+                                "price": 87000.0
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Not Found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Product with sku 'ZS10220' not found!"
+                    }
+                }
+            }
+        }
+    }
+)
+async def get_product_by_sku(session: SessionDep, sku: str) -> FullProductPublic:
+    """
+    Gets a product with its full information like name, brand, category and variants.
+
+    - **sku**: The product's sku.
+    """
+
+    # Get the product
+    product = ProductCrud.get_full_product_by_sku(session, sku)
+
+    # Return the product
+    return product
+
+###################################################################################################

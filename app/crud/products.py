@@ -76,7 +76,7 @@ class ProductCrud():
 
 
     @staticmethod
-    def create_product_category(session: Session, category: CategoryCreate) -> CategoryPublic:
+    def create_product_category(session: Session, category: CategoryCreate) -> ProductCategory:
         
         """
         Creates a new product category by passing the name of the category.
@@ -89,6 +89,9 @@ class ProductCrud():
             CategoryPublic: The created category.
         """
 
+        # Uppercase the category_name
+        category.category = category.category.upper()
+        
         # Validate the CategoryCreate as a ProductCategory
         category_db = ProductCategory.model_validate(category)
 
@@ -97,7 +100,7 @@ class ProductCrud():
         session.commit()
         session.refresh(category_db)
 
-        return CategoryPublic.model_validate(category_db)
+        return category_db
 
 
     @staticmethod
@@ -241,7 +244,7 @@ class ProductCrud():
             product_category=category,
             available=product.available,
             product_variants=[
-                ProductVariantPublic.model_validate(variant) for variant in variants
+                ProductVariantPublic(**variant.model_dump()) for variant in variants
             ]
         )
 
