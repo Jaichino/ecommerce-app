@@ -40,7 +40,7 @@ class CategoryCreate(BaseModel):
 
 class ProductUpdate(BaseModel):
     product_name: str | None = None
-    brand: str
+    brand: str | None = None
     product_category_id: int | None = None
     available: bool | None = None
 

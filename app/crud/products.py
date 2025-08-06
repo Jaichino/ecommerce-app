@@ -195,7 +195,7 @@ class ProductCrud():
 
         # Raise exception if the sku couldn't find any product
         if not product:
-            return None
+            raise ProductNotFoundError(sku=sku)
         
         # Return the product
         return product
@@ -421,7 +421,7 @@ class ProductCrud():
     @staticmethod
     def update_base_product(
         session: Session, sku: str, product_update: ProductUpdate
-    ) -> ProductBasePublic:
+    ) -> Products:
         
         """
         Updates an existing base product by passing its sku and an object ProductUpdate with the
@@ -433,17 +433,11 @@ class ProductCrud():
             product_update (ProductUpdate): Data of the product to be updated.
         
         Returns:
-            A ProductBasePublic object.
+            A Products object.
         """
         
         # Get the product to update
-        product_to_update = session.exec(
-            select(Products).where(Products.sku == sku)
-        ).first()
-
-        # Raise exception if the sku couldn't get a product
-        if not product_to_update:
-            raise ProductNotFoundError(sku=sku)
+        product_to_update = ProductCrud.get_base_product_by_sku(session, sku)
         
         # Update the product
         product_to_update.sqlmodel_update(product_update)
@@ -451,9 +445,8 @@ class ProductCrud():
         session.commit()
         session.refresh(product_to_update)
 
-        # Create and return a ProductBasePublic
-
-        return ProductBasePublic.model_validate(product_to_update)
+        # Return the updated product
+        return product_to_update
 
 
     @staticmethod
