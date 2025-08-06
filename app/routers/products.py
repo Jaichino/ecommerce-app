@@ -16,7 +16,7 @@ from app.db.database import get_session
 
 from app.schemas.products import (
     ProductBaseCreate, ProductBasePublic, ProductVariantPublic, ProductVariantCreate,
-    ProductUpdate, FullProductPublic, CategoryCreate, CategoryPublic, CategoryUpdate
+    ProductUpdate, FullProductPublic
 )
 
 from app.crud.products import ProductCrud
@@ -342,5 +342,69 @@ async def get_product_by_sku(session: SessionDep, sku: str) -> FullProductPublic
     # Return the product
     return product
 ###################################################################################################
+
+###################################################################################################
+
+###################################################################################################
+# UPDATE ENDPOINTS
+
+###################################################################################################
+# Update a base product
+@router.patch(
+    "/{sku}",
+    response_model=ProductBasePublic,
+    responses={
+        status.HTTP_200_OK:{
+            "description": "OK",
+            "content": {
+                "application/json":{
+                    "example": {    
+                        "product_id": 16,
+                        "sku": "SH0012",
+                        "product_name": "Athletic Tee",
+                        "brand": "Under Armour",
+                        "product_category_id": 1,
+                        "available": True
+                    }
+                }
+            }
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Not Found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Product with sku 'ZS10220' not found!"
+                    }
+                }
+            }
+        }
+    }
+)
+async def update_base_product(
+    session: SessionDep, 
+    sku: str, 
+    product_update: Annotated[ProductUpdate, Body(example={"product_name": "Athletic Tee"})]
+) -> ProductBasePublic:
+    
+    """
+    Updates a base product by passing its sku and the fields to be updated, like product name, 
+    brand, category or availability.
+
+    - **sku (str)**: The product's sku.
+    - **product_update (ProductUpdate)**: Data to modify the product.
+    """
+    
+    # Exclude unset fields
+    product_data = product_update.model_dump(exclude_unset=True)
+
+    # Update the product
+    updated_product = ProductCrud.update_base_product(session, sku, product_update=product_data)
+
+    # Return the updated product
+    return updated_product
+###################################################################################################
+
+
 
 ###################################################################################################
