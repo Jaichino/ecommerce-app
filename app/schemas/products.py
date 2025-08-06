@@ -26,7 +26,7 @@ class ProductBaseCreate(BaseModel):
 class ProductVariantCreate(BaseModel):
     size: str | None = Field(max_length=4)
     color: str
-    quantity: int
+    stock: int
     price: float
 
     model_config = {"extra": "forbid"}

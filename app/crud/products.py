@@ -76,7 +76,7 @@ class ProductCrud():
 
 
     @staticmethod
-    def create_product_category(session: Session, category: CategoryCreate) -> CategoryPublic:
+    def create_product_category(session: Session, category: CategoryCreate) -> ProductCategory:
         
         """
         Creates a new product category by passing the name of the category.
@@ -89,6 +89,9 @@ class ProductCrud():
             CategoryPublic: The created category.
         """
 
+        # Uppercase the category_name
+        category.category = category.category.upper()
+        
         # Validate the CategoryCreate as a ProductCategory
         category_db = ProductCategory.model_validate(category)
 
@@ -97,7 +100,7 @@ class ProductCrud():
         session.commit()
         session.refresh(category_db)
 
-        return CategoryPublic.model_validate(category_db)
+        return category_db
 
 
     @staticmethod
@@ -140,6 +143,8 @@ class ProductCrud():
 
         except IntegrityError:
 
+            session.rollback()
+
             # If the variant exists, then add quantity and update the price to the existing variant
             existent_variant = session.exec(
                 select(ProductVariant)
@@ -148,7 +153,7 @@ class ProductCrud():
                     ProductVariant.size == variant_db.size,
                     ProductVariant.color == variant_db.color
                 )
-            ).first()
+            ).one()
 
             # Add the quantity and actualice the price to the existing product
             existent_variant.stock += variant_db.stock
@@ -239,7 +244,7 @@ class ProductCrud():
             product_category=category,
             available=product.available,
             product_variants=[
-                ProductVariantPublic.model_validate(variant) for variant in variants
+                ProductVariantPublic(**variant.model_dump()) for variant in variants
             ]
         )
 
@@ -250,29 +255,31 @@ class ProductCrud():
     def get_products(
         session: Session,
         available: bool = True,
+        brand: str | None = None,
         category: str | None = None,
         size: str | None = None,
         color: str | None = None,
         min_price: float | None = None,
         max_price: float | None = None,
-        limit: int = 100,
+        limit: int = 10,
         offset: int = 0
     ) -> list[FullProductPublic]:
         
         """
-        Gets all the products, filtering by optional parameters like category, size, color and
+        Gets all the products, filtering by optional parameters like brand, category, size, color and
         prices.
 
         Args:
             session (Session): The SQLModel session to interact with the database.
             available (bool): True if the product is available, False if not.
+            brand (str): The product's brand.
             category (str): The product's category.
             size (str): The product's size.
             color (str): The product's color.
-            min_price (float): Minimun price to filter
-            max_price (float): Maximum price to filter
-            limit (int): Maximun number of products returned
-            offset (int): Initial index of the returned list
+            min_price (float): Minimun price to filter.
+            max_price (float): Maximum price to filter.
+            limit (int): Maximun number of products returned.
+            offset (int): Number of products to skip before starting to return results.
         
         Returns:
             a list of FullProductPublic
@@ -285,12 +292,20 @@ class ProductCrud():
             .where(Products.available == available)
         )
 
+        # Filter for brand
+        if brand:
+            query = (
+                query
+                .where(Products.brand == brand)
+            )
+
         # Filter for category if category is not None
         if category:
             query = (
                 query
                 .where(Products.category.has(category=category))
             )
+
 
         # Size, color and price filters, need a join
         if size or color or (min_price is not None and max_price is not None):
@@ -311,14 +326,14 @@ class ProductCrud():
             )
 
         # If min and max price, the filter between the 2 prices
-        if min_price and max_price:
+        if min_price is not None and max_price is not None:
             query = (
                 query
                 .where(
                     between(ProductVariant.price, min_price, max_price)
                 )
             )
-
+        
         # Order the results by name and add offset and limit for pagination
         query = query.order_by(Products.product_name).offset(offset).limit(limit)
 
@@ -340,7 +355,7 @@ class ProductCrud():
                 product_category=product.category.category,
                 available=product.available,
                 product_variants=[
-                    ProductVariantPublic.model_validate(variant) for variant in variants
+                    ProductVariantPublic(**variant.model_dump()) for variant in variants
                 ]
             )
 
