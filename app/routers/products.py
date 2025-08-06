@@ -8,7 +8,7 @@
 
 from typing import Annotated
 from sqlmodel import Session
-from fastapi import APIRouter, Depends, status, Body
+from fastapi import APIRouter, Depends, status, Body, Query
 
 from app.db.database import get_session
 
@@ -174,6 +174,110 @@ async def create_product_variant(
 # GET ENDPOINTS
 
 ###################################################################################################
+# Get a list of products
+@router.get(
+        "",
+        response_model=list[FullProductPublic],
+        responses={
+            status.HTTP_200_OK:{
+                "description": "OK",
+                "content": {
+                    "application/json": {
+                        "example":[
+                            {
+                                "product_id": 6,
+                                "sku": "SH0002",
+                                "product_name": "Basic shirt",
+                                "brand": "Lacoste",
+                                "product_category": "Shirts",
+                                "available": True,
+                                "product_variants": [
+                                    {
+                                        "variant_id": 13,
+                                        "product_id": 6,
+                                        "size": "L",
+                                        "color": "Black",
+                                        "stock": 5,
+                                        "price": 45000.0
+                                    }
+                                ]
+                            },
+                            {
+                                "product_id": 5,
+                                "sku": "SH0001",
+                                "product_name": "Cotton shirt",
+                                "brand": "Lacoste",
+                                "product_category": "Shirts",
+                                "available": True,
+                                "product_variants": [
+                                    {
+                                        "variant_id": 2,
+                                        "product_id": 5,
+                                        "size": "L",
+                                        "color": "Black",
+                                        "stock": 13,
+                                        "price": 90000.0
+                                    },
+                                    {
+                                        "variant_id": 10,
+                                        "product_id": 5,
+                                        "size": "L",
+                                        "color": "Blue",
+                                        "stock": 4,
+                                        "price": 87000.0
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+)
+async def get_products(
+    session: SessionDep,
+    limit:  int = 10,
+    offset: int = 0,
+    brand: str | None = None,
+    category: Annotated[str | None, Query()] = None,
+    size: Annotated[str | None, Query()] = None,
+    color: Annotated[str | None, Query()] = None,
+    min_price: Annotated[float | None, Query()] = None,
+    max_price: Annotated[float | None, Query()] = None,
+):
+    
+    """
+    Retrieves a list of products along with their full details. The results can be filtered by passing
+    any of the following optional parameters:
+
+    - **limit (int)**: Maximum number of products to return.
+    - **offset (int)**: Number of products to skip before starting to return results.
+    - **brand (str)**: The product's brand.
+    - **category (str)**: Product category name (e.g., "T-SHIRTS").
+    - **size (str)**: Product size (e.g., "XL").
+    - **color (str)**: Product color (e.g., "Red").
+    - **min_price (float)**: Minimum price to include in the results.
+    - **max_price (float)**: Maximum price to include in the results.
+    """
+
+    # Get the list of products
+    products = ProductCrud.get_products(
+        session=session,
+        limit=limit,
+        offset=offset,
+        brand=brand,
+        category=category,
+        size=size,
+        color=color,
+        min_price=min_price,
+        max_price=max_price
+    )
+
+    # Return the list of products
+    return products
+###################################################################################################
+
+###################################################################################################
 # Get one product
 @router.get(
     "/{sku}",
@@ -225,6 +329,7 @@ async def create_product_variant(
     }
 )
 async def get_product_by_sku(session: SessionDep, sku: str) -> FullProductPublic:
+    
     """
     Gets a product with its full information like name, brand, category and variants.
 
@@ -236,5 +341,6 @@ async def get_product_by_sku(session: SessionDep, sku: str) -> FullProductPublic
 
     # Return the product
     return product
+###################################################################################################
 
 ###################################################################################################
