@@ -507,13 +507,7 @@ class ProductCrud():
         """
 
         # Get the variant to update
-        variant_to_update = session.exec(
-            select(ProductVariant).where(ProductVariant.variant_id == variant_id)
-        ).first()
-
-        # Raise exception if variant_id couldn't match any variant
-        if not variant_to_update:
-            raise ProductVariantNotFoundError(variant_id=variant_id)
+        variant_to_update = ProductCrud.get_variant_info(session, variant_id)
         
         # Update the product and return it
         variant_to_update.sqlmodel_update(variant_update)
@@ -628,7 +622,7 @@ class ProductCrud():
     ###############################################################################################
     # Delete
 
-    @ staticmethod
+    @staticmethod
     def delete_base_product(session: Session, sku: str) -> ProductBasePublic:
         
         """

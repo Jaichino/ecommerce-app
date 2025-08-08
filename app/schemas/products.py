@@ -54,8 +54,6 @@ class CategoryUpdate(BaseModel):
 
 
 class ProductVariantUpdate(BaseModel):
-    size: str | None = None
-    color: str | None = None
     stock: int | None = None
     price: float | None = None
 

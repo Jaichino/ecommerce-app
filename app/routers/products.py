@@ -16,7 +16,7 @@ from app.db.database import get_session
 
 from app.schemas.products import (
     ProductBaseCreate, ProductBasePublic, ProductVariantPublic, ProductVariantCreate,
-    ProductUpdate, FullProductPublic
+    ProductUpdate, FullProductPublic, ProductVariantUpdate
 )
 
 from app.crud.products import ProductCrud
@@ -405,6 +405,64 @@ async def update_base_product(
     return updated_product
 ###################################################################################################
 
+###################################################################################################
+# Update a product variant
+@router.patch(
+    "/variants/{variant_id}",
+    response_model=ProductVariantPublic,
+    responses={
+        status.HTTP_200_OK:{
+            "description": "OK",
+            "content": {
+                "application/json":{
+                    "example": {
+                        "variant_id": 20,
+                        "product_id": 18,
+                        "size": "XXL",
+                        "color": "Lightblue",
+                        "stock": 22,
+                        "price": 86000.0
+                    }
+                }
+            }
+        },
+        status.HTTP_404_NOT_FOUND:{
+            "description": "Not Found",
+            "content": {
+                "application/json":{
+                    "example":{
+                        "detail": "Variant with variant_id '206' not found!"
+                    }
+                }
+            }
+        }
+    }
+)
+async def update_product_variant(
+    session: SessionDep,
+    variant_id: int,
+    variant_update: Annotated[
+        ProductVariantUpdate, 
+        Body(example={"stock": 10, "price": 86000.00})
+    ]
+) -> ProductVariantPublic:
+    
+    """
+    Updates a product variant by passing its id and the data to modify the product, like price or stock.
 
+    - **variant_id (int)**: The product variant's id.
+    - **variant_update (ProductVariantUpdate)**: Data to update the product variant.
+    """
+    
+    # Get the data to update the product excluding unset fields
+    variant_data = variant_update.model_dump(exclude_unset=True)
+
+    # Update the product variant
+    updated_product_variant = ProductCrud.update_product_variant(
+        session=session, variant_id=variant_id, variant_update=variant_data
+    )
+
+    # Return the updated product variant
+    return updated_product_variant
 
 ###################################################################################################
