@@ -615,7 +615,7 @@ class ProductCrud():
     # Delete
 
     @staticmethod
-    def delete_base_product(session: Session, sku: str) -> ProductBasePublic:
+    def delete_base_product(session: Session, sku: str) -> Products:
         
         """
         Deletes a base product by passing its sku.
@@ -629,20 +629,14 @@ class ProductCrud():
         """
 
         # Get the product to delete
-        product_to_delete = session.exec(
-            select(Products).where(Products.sku == sku)
-        ).first()
-
-        # Raise exception if the sku couldn't match any product
-        if not product_to_delete:
-            raise ProductNotFoundError(sku=sku)
+        product_to_delete = ProductCrud.get_base_product_by_sku(session, sku)
 
         # Delete the product
         session.delete(product_to_delete)
         session.commit()
 
-        # Return a ProductBasePublic
-        return ProductBasePublic.model_validate(product_to_delete)
+        # Return the deleted product
+        return product_to_delete
     
     
     @staticmethod
@@ -691,11 +685,7 @@ class ProductCrud():
         """
 
         # Get the variant to delete
-        variant_to_delete = session.get(ProductVariant, variant_id)
-
-        # Raise exception if variant_id couldn't match any variant
-        if not variant_to_delete:
-            raise ProductVariantNotFoundError(variant_id=variant_id)
+        variant_to_delete = ProductCrud.get_variant_info(session, variant_id)
         
         # Delete and return the variant
         session.delete(variant_to_delete)

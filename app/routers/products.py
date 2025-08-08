@@ -495,6 +495,88 @@ async def change_product_availability(
     return product_variant
 ###################################################################################################
 
+###################################################################################################
 
+
+###################################################################################################
+# DELETE ENDPOINTS
+
+###################################################################################################
+# Delete a base product
+@router.delete(
+    "/{sku}",
+    response_model=ProductBasePublic,
+    responses={
+        status.HTTP_200_OK: {
+            "description": "OK",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "product_id": 23,
+                        "sku": "SH0019",
+                        "product_name": "Colorblock T-Shirt",
+                        "brand": "Puma",
+                        "product_category_id": 1,
+                        "available": True
+                    }
+                }
+            }
+        },
+        status.HTTP_404_NOT_FOUND: example_sku_notfound
+    }
+)
+async def delete_base_product(session: SessionDep, sku: str) -> ProductBasePublic:
+    
+    """
+    Deletes a base product by passing its sku.
+
+    - **sku (str)**: The base product's sku.
+    """
+
+    # Delete the product
+    deleted_product = ProductCrud.delete_base_product(session, sku)
+
+    # Return the deleted product
+    return deleted_product
+###################################################################################################
+
+###################################################################################################
+# Delete a product variant
+@router.delete(
+    "/variants/{variant_id}",
+    response_model=ProductVariantPublic,
+    responses={
+        status.HTTP_200_OK: {
+            "description": "OK",
+            "content":{
+                "application/json":{
+                    "example":{
+                        "variant_id": 12,
+                        "product_id": 5,
+                        "size": "XL",
+                        "color": "White",
+                        "stock": 2,
+                        "price": 89000.0
+                    }
+                }
+            }
+        },
+        status.HTTP_404_NOT_FOUND: example_variant_notfound
+    }
+)
+async def delete_product_variant(session: SessionDep, variant_id: int) -> ProductVariantPublic:
+
+    """
+    Deletes a product variant info by passing the variant_id.
+
+    - **variant_id (int)**: The product variant's id.
+    """
+    
+    # Delete the product variant
+    deleted_variant = ProductCrud.delete_product_variant(session, variant_id)
+
+    # Return the deleted product variant
+    return deleted_variant
+###################################################################################################
 
 ###################################################################################################
