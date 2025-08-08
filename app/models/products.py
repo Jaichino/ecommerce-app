@@ -10,11 +10,9 @@ from typing import TYPE_CHECKING
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import UniqueConstraint
 from app.models.order_detail import OrderDetail
-from app.models.cart_detail import CartDetail
 
 if TYPE_CHECKING:
     from app.models.orders import Order
-    from app.models.cart import Cart
 
 ###################################################################################################
 
@@ -26,6 +24,7 @@ class Products(SQLModel, table=True):
     product_id: int | None = Field(default=None, primary_key=True)
     sku: str = Field(index=True, unique=True)
     product_name: str = Field(unique=True, index=True)
+    brand: str | None = Field(default=None, index=True)
     product_category_id: int | None = Field(
         foreign_key="productcategory.category_id", ondelete="SET NULL"
     )
@@ -61,8 +60,6 @@ class ProductVariant(SQLModel, table=True):
     # Model Relationships
     orders: list['Order'] = Relationship(back_populates="products", link_model=OrderDetail)
     prod: Products = Relationship(back_populates="variants")
-    carts: list['Cart'] = Relationship(back_populates="products", link_model=CartDetail)
     orderdetails: list['OrderDetail'] = Relationship(back_populates="product")
-    cartdetails: list['CartDetail'] = Relationship(back_populates="product")
 
 ###################################################################################################

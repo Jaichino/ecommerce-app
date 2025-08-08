@@ -25,8 +25,6 @@ from app.models import products
 from app.models import orders
 from app.models import order_detail
 from app.models import users
-from app.models import cart
-from app.models import cart_detail
 from app.models import shippers
 
 from app.db.database import engine

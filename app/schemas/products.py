@@ -17,7 +17,8 @@ from pydantic import BaseModel, Field
 class ProductBaseCreate(BaseModel):
     sku: str
     product_name: str
-    category_id: int | None = None
+    brand: str
+    product_category_id: int | None = None
 
     model_config = {"extra": "forbid"}
 
@@ -25,7 +26,7 @@ class ProductBaseCreate(BaseModel):
 class ProductVariantCreate(BaseModel):
     size: str | None = Field(max_length=4)
     color: str
-    quantity: int
+    stock: int
     price: float
 
     model_config = {"extra": "forbid"}
@@ -39,6 +40,7 @@ class CategoryCreate(BaseModel):
 
 class ProductUpdate(BaseModel):
     product_name: str | None = None
+    brand: str | None = None
     product_category_id: int | None = None
     available: bool | None = None
 
@@ -52,8 +54,6 @@ class CategoryUpdate(BaseModel):
 
 
 class ProductVariantUpdate(BaseModel):
-    size: str | None = None
-    color: str | None = None
     stock: int | None = None
     price: float | None = None
 
@@ -69,6 +69,7 @@ class ProductBasePublic(BaseModel):
     product_id: int
     sku: str
     product_name: str
+    brand: str
     product_category_id: int
     available: bool
 
@@ -91,6 +92,7 @@ class FullProductPublic(BaseModel):
     product_id: int
     sku: str
     product_name: str
+    brand: str
     product_category: str
     available: bool
     product_variants: list[ProductVariantPublic] | None

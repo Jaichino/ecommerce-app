@@ -32,7 +32,7 @@ class ProductCrud():
     # Create
 
     @staticmethod
-    def create_product_base(session: Session, product_in: ProductBaseCreate) -> ProductBasePublic:
+    def create_product_base(session: Session, product_in: ProductBaseCreate) -> Products:
 
         """
         Creates a new base product. If a product with the passed SKU already exists and it's not
@@ -44,7 +44,7 @@ class ProductCrud():
             product_in (ProductBaseCreate): Data for the product to be created.
 
         Returns:
-            A ProductBasePublic object.
+            A Products object.
         """
 
         # Validate the ProductBaseCreate as Products
@@ -60,25 +60,23 @@ class ProductCrud():
 
         # If the product exists and is not available, then reactive it.
         if product_exists and product_exists.available is False:
-            return ProductCrud.reactivate_product(session, product_db.sku)
+            ProductCrud.reactivate_product(session, product_exists.sku)
         
         # If the product exists and is available, then return it.
         if product_exists and product_exists.available is True:
             return product_exists
 
-        # Add product_db to the session and commit, then return the created product
-        session.add(product_db)
-        session.commit()
-        session.refresh(product_db)
+        if not product_exists:
+            # Add product_db to the session and commit, then return the created product
+            session.add(product_db)
+            session.commit()
+            session.refresh(product_db)
 
-        # Create and return a ProductBasePublic
-        product_public = ProductBasePublic.model_validate(product_db)
-
-        return product_public
+            return product_db
 
 
     @staticmethod
-    def create_product_category(session: Session, category: CategoryCreate) -> CategoryPublic:
+    def create_product_category(session: Session, category: CategoryCreate) -> ProductCategory:
         
         """
         Creates a new product category by passing the name of the category.
@@ -91,6 +89,9 @@ class ProductCrud():
             CategoryPublic: The created category.
         """
 
+        # Uppercase the category_name
+        category.category = category.category.upper()
+        
         # Validate the CategoryCreate as a ProductCategory
         category_db = ProductCategory.model_validate(category)
 
@@ -99,7 +100,7 @@ class ProductCrud():
         session.commit()
         session.refresh(category_db)
 
-        return CategoryPublic.model_validate(category_db)
+        return category_db
 
 
     @staticmethod
@@ -142,6 +143,8 @@ class ProductCrud():
 
         except IntegrityError:
 
+            session.rollback()
+
             # If the variant exists, then add quantity and update the price to the existing variant
             existent_variant = session.exec(
                 select(ProductVariant)
@@ -150,7 +153,7 @@ class ProductCrud():
                     ProductVariant.size == variant_db.size,
                     ProductVariant.color == variant_db.color
                 )
-            ).first()
+            ).one()
 
             # Add the quantity and actualice the price to the existing product
             existent_variant.stock += variant_db.stock
@@ -172,7 +175,7 @@ class ProductCrud():
     def get_base_product_by_sku(
         session: Session,
         sku: str
-    ) -> ProductBasePublic:
+    ) -> Products | None:
         
         """
         Gets a ProductBasePublic available or not by passing the product's sku.
@@ -182,7 +185,7 @@ class ProductCrud():
             sku (str): The SKU of the base product.
 
         Returns:
-            A ProductBasePublic object.
+            A Products object or None if the sku couldn't match any product.
         """
         
         # Get the product with the sku
@@ -194,10 +197,8 @@ class ProductCrud():
         if not product:
             raise ProductNotFoundError(sku=sku)
         
-        # Generate a ProductBasePublic and return it
-        product_public = ProductBasePublic.model_validate(product)
-
-        return product_public
+        # Return the product
+        return product
 
 
     @staticmethod
@@ -239,10 +240,11 @@ class ProductCrud():
             product_id=product.product_id,
             sku=product.sku,
             product_name=product.product_name,
+            brand=product.brand,
             product_category=category,
             available=product.available,
             product_variants=[
-                ProductVariantPublic.model_validate(variant) for variant in variants
+                ProductVariantPublic(**variant.model_dump()) for variant in variants
             ]
         )
 
@@ -253,29 +255,31 @@ class ProductCrud():
     def get_products(
         session: Session,
         available: bool = True,
+        brand: str | None = None,
         category: str | None = None,
         size: str | None = None,
         color: str | None = None,
         min_price: float | None = None,
         max_price: float | None = None,
-        limit: int = 100,
+        limit: int = 10,
         offset: int = 0
     ) -> list[FullProductPublic]:
         
         """
-        Gets all the products, filtering by optional parameters like category, size, color and
+        Gets all the products, filtering by optional parameters like brand, category, size, color and
         prices.
 
         Args:
             session (Session): The SQLModel session to interact with the database.
             available (bool): True if the product is available, False if not.
+            brand (str): The product's brand.
             category (str): The product's category.
             size (str): The product's size.
             color (str): The product's color.
-            min_price (float): Minimun price to filter
-            max_price (float): Maximum price to filter
-            limit (int): Maximun number of products returned
-            offset (int): Initial index of the returned list
+            min_price (float): Minimun price to filter.
+            max_price (float): Maximum price to filter.
+            limit (int): Maximun number of products returned.
+            offset (int): Number of products to skip before starting to return results.
         
         Returns:
             a list of FullProductPublic
@@ -288,12 +292,20 @@ class ProductCrud():
             .where(Products.available == available)
         )
 
+        # Filter for brand
+        if brand:
+            query = (
+                query
+                .where(Products.brand == brand)
+            )
+
         # Filter for category if category is not None
         if category:
             query = (
                 query
                 .where(Products.category.has(category=category))
             )
+
 
         # Size, color and price filters, need a join
         if size or color or (min_price is not None and max_price is not None):
@@ -314,14 +326,14 @@ class ProductCrud():
             )
 
         # If min and max price, the filter between the 2 prices
-        if min_price and max_price:
+        if min_price is not None and max_price is not None:
             query = (
                 query
                 .where(
                     between(ProductVariant.price, min_price, max_price)
                 )
             )
-
+        
         # Order the results by name and add offset and limit for pagination
         query = query.order_by(Products.product_name).offset(offset).limit(limit)
 
@@ -339,10 +351,11 @@ class ProductCrud():
                 product_id=product.product_id,
                 sku=product.sku,
                 product_name=product.product_name,
+                brand=product.brand,
                 product_category=product.category.category,
                 available=product.available,
                 product_variants=[
-                    ProductVariantPublic.model_validate(variant) for variant in variants
+                    ProductVariantPublic(**variant.model_dump()) for variant in variants
                 ]
             )
 
@@ -408,7 +421,7 @@ class ProductCrud():
     @staticmethod
     def update_base_product(
         session: Session, sku: str, product_update: ProductUpdate
-    ) -> ProductBasePublic:
+    ) -> Products:
         
         """
         Updates an existing base product by passing its sku and an object ProductUpdate with the
@@ -420,17 +433,11 @@ class ProductCrud():
             product_update (ProductUpdate): Data of the product to be updated.
         
         Returns:
-            A ProductBasePublic object.
+            A Products object.
         """
         
         # Get the product to update
-        product_to_update = session.exec(
-            select(Products).where(Products.sku == sku)
-        ).first()
-
-        # Raise exception if the sku couldn't get a product
-        if not product_to_update:
-            raise ProductNotFoundError(sku=sku)
+        product_to_update = ProductCrud.get_base_product_by_sku(session, sku)
         
         # Update the product
         product_to_update.sqlmodel_update(product_update)
@@ -438,9 +445,8 @@ class ProductCrud():
         session.commit()
         session.refresh(product_to_update)
 
-        # Create and return a ProductBasePublic
-
-        return ProductBasePublic.model_validate(product_to_update)
+        # Return the updated product
+        return product_to_update
 
 
     @staticmethod
@@ -501,13 +507,7 @@ class ProductCrud():
         """
 
         # Get the variant to update
-        variant_to_update = session.exec(
-            select(ProductVariant).where(ProductVariant.variant_id == variant_id)
-        ).first()
-
-        # Raise exception if variant_id couldn't match any variant
-        if not variant_to_update:
-            raise ProductVariantNotFoundError(variant_id=variant_id)
+        variant_to_update = ProductCrud.get_variant_info(session, variant_id)
         
         # Update the product and return it
         variant_to_update.sqlmodel_update(variant_update)
@@ -519,7 +519,7 @@ class ProductCrud():
 
 
     @staticmethod
-    def deactivate_product(session: Session, sku: str) -> ProductBasePublic:
+    def deactivate_product(session: Session, sku: str) -> Products:
         
         """
         Deactivates a base product turning the available field to False.
@@ -529,16 +529,11 @@ class ProductCrud():
             sku (str): The product's sku.
         
         Returns:
-            A ProductBasePublic.
+            A Products object.
         """
-        # Get the product
-        product = session.exec(
-            select(Products).where(Products.sku == sku)
-        ).first()
 
-        # Raise exception if the sku couldn't match any product
-        if not product:
-            raise ProductNotFoundError(sku=sku)
+        # Get the product
+        product = ProductCrud.get_base_product_by_sku(session, sku)
         
         # Deactivate the product turning available field to False
         product.available = False
@@ -548,14 +543,11 @@ class ProductCrud():
         session.commit()
         session.refresh(product)
 
-        # Create and return a ProductBasePublic
-        product_public = ProductBasePublic.model_validate(product)
-
-        return product_public
+        return product
     
 
     @staticmethod
-    def reactivate_product(session: Session, sku: str) -> ProductBasePublic:
+    def reactivate_product(session: Session, sku: str) -> Products:
         
         """
         Reactivates a base product turning the available field to True.
@@ -565,7 +557,7 @@ class ProductCrud():
             sku (str): The product's sku.
         
         Returns:
-            A ProductBasePublic.
+            A Products.
         """
 
         # Get the product
@@ -585,11 +577,9 @@ class ProductCrud():
         session.commit()
         session.refresh(product)
 
-        # Create and return a ProductBasePublic
-        product_public = ProductBasePublic.model_validate(product)
+        # Return the product
+        return product
 
-        return product_public
-    
 
     @staticmethod
     def substract_product(session: Session, variant_id: int, quantity_substracted: int):
@@ -624,8 +614,8 @@ class ProductCrud():
     ###############################################################################################
     # Delete
 
-    @ staticmethod
-    def delete_base_product(session: Session, sku: str) -> ProductBasePublic:
+    @staticmethod
+    def delete_base_product(session: Session, sku: str) -> Products:
         
         """
         Deletes a base product by passing its sku.
@@ -639,20 +629,14 @@ class ProductCrud():
         """
 
         # Get the product to delete
-        product_to_delete = session.exec(
-            select(Products).where(Products.sku == sku)
-        ).first()
-
-        # Raise exception if the sku couldn't match any product
-        if not product_to_delete:
-            raise ProductNotFoundError(sku=sku)
+        product_to_delete = ProductCrud.get_base_product_by_sku(session, sku)
 
         # Delete the product
         session.delete(product_to_delete)
         session.commit()
 
-        # Return a ProductBasePublic
-        return ProductBasePublic.model_validate(product_to_delete)
+        # Return the deleted product
+        return product_to_delete
     
     
     @staticmethod
@@ -701,11 +685,7 @@ class ProductCrud():
         """
 
         # Get the variant to delete
-        variant_to_delete = session.get(ProductVariant, variant_id)
-
-        # Raise exception if variant_id couldn't match any variant
-        if not variant_to_delete:
-            raise ProductVariantNotFoundError(variant_id=variant_id)
+        variant_to_delete = ProductCrud.get_variant_info(session, variant_id)
         
         # Delete and return the variant
         session.delete(variant_to_delete)
