@@ -507,13 +507,7 @@ class ProductCrud():
         """
 
         # Get the variant to update
-        variant_to_update = session.exec(
-            select(ProductVariant).where(ProductVariant.variant_id == variant_id)
-        ).first()
-
-        # Raise exception if variant_id couldn't match any variant
-        if not variant_to_update:
-            raise ProductVariantNotFoundError(variant_id=variant_id)
+        variant_to_update = ProductCrud.get_variant_info(session, variant_id)
         
         # Update the product and return it
         variant_to_update.sqlmodel_update(variant_update)
@@ -525,7 +519,7 @@ class ProductCrud():
 
 
     @staticmethod
-    def deactivate_product(session: Session, sku: str) -> ProductBasePublic:
+    def deactivate_product(session: Session, sku: str) -> Products:
         
         """
         Deactivates a base product turning the available field to False.
@@ -535,16 +529,11 @@ class ProductCrud():
             sku (str): The product's sku.
         
         Returns:
-            A ProductBasePublic.
+            A Products object.
         """
-        # Get the product
-        product = session.exec(
-            select(Products).where(Products.sku == sku)
-        ).first()
 
-        # Raise exception if the sku couldn't match any product
-        if not product:
-            raise ProductNotFoundError(sku=sku)
+        # Get the product
+        product = ProductCrud.get_base_product_by_sku(session, sku)
         
         # Deactivate the product turning available field to False
         product.available = False
@@ -554,10 +543,7 @@ class ProductCrud():
         session.commit()
         session.refresh(product)
 
-        # Create and return a ProductBasePublic
-        product_public = ProductBasePublic.model_validate(product)
-
-        return product_public
+        return product
     
 
     @staticmethod
@@ -628,8 +614,8 @@ class ProductCrud():
     ###############################################################################################
     # Delete
 
-    @ staticmethod
-    def delete_base_product(session: Session, sku: str) -> ProductBasePublic:
+    @staticmethod
+    def delete_base_product(session: Session, sku: str) -> Products:
         
         """
         Deletes a base product by passing its sku.
@@ -643,20 +629,14 @@ class ProductCrud():
         """
 
         # Get the product to delete
-        product_to_delete = session.exec(
-            select(Products).where(Products.sku == sku)
-        ).first()
-
-        # Raise exception if the sku couldn't match any product
-        if not product_to_delete:
-            raise ProductNotFoundError(sku=sku)
+        product_to_delete = ProductCrud.get_base_product_by_sku(session, sku)
 
         # Delete the product
         session.delete(product_to_delete)
         session.commit()
 
-        # Return a ProductBasePublic
-        return ProductBasePublic.model_validate(product_to_delete)
+        # Return the deleted product
+        return product_to_delete
     
     
     @staticmethod
@@ -705,11 +685,7 @@ class ProductCrud():
         """
 
         # Get the variant to delete
-        variant_to_delete = session.get(ProductVariant, variant_id)
-
-        # Raise exception if variant_id couldn't match any variant
-        if not variant_to_delete:
-            raise ProductVariantNotFoundError(variant_id=variant_id)
+        variant_to_delete = ProductCrud.get_variant_info(session, variant_id)
         
         # Delete and return the variant
         session.delete(variant_to_delete)
