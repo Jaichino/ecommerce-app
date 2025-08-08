@@ -38,7 +38,40 @@ router = APIRouter(
 SessionDep = Annotated[Session, Depends(get_session)]
 
 ###################################################################################################
+# Responses examples
 
+example_variant_notfound = {
+            "description": "Not Found",
+            "content": {
+                "application/json":{
+                    "example":{
+                        "detail": "Variant with variant_id '206' not found!"
+                    }
+                }
+            }
+}
+
+example_sku_notfound = {
+            "description": "Not Found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Product with sku 'ZS10220' not found!"
+                    }
+                }
+            }
+}
+
+example_category_notfound = {
+                "description": "Not Found",
+                "content": {
+                    "application/json": {
+                        "example": {
+                            "detail": "Category with category_id '544' not found!"
+                        }
+                    }
+                }
+}
 
 ###################################################################################################
 # POST ENDPOINTS
@@ -65,16 +98,7 @@ SessionDep = Annotated[Session, Depends(get_session)]
                     }
                 }
             },
-            status.HTTP_404_NOT_FOUND:{
-                "description": "Not Found",
-                "content": {
-                    "application/json": {
-                        "example": {
-                            "detail": "Category with category_id '544' not found!"
-                        }
-                    }
-                }
-            }
+            status.HTTP_404_NOT_FOUND: example_category_notfound
         }
 )
 async def create_base_product(
@@ -126,16 +150,7 @@ async def create_base_product(
                 }
             }
         },
-        status.HTTP_404_NOT_FOUND:{
-            "description": "Not Found",
-            "content":{
-                "application/json":{
-                    "example":{
-                        "detail": "Product with sku '5' not found!"
-                    }
-                }
-            }
-        }
+        status.HTTP_404_NOT_FOUND: example_sku_notfound
     }
 )
 async def create_product_variant(
@@ -316,16 +331,7 @@ async def get_products(
                 }
             }
         },
-        status.HTTP_404_NOT_FOUND: {
-            "description": "Not Found",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "Product with sku 'ZS10220' not found!"
-                    }
-                }
-            }
-        }
+        status.HTTP_404_NOT_FOUND: example_sku_notfound
     }
 )
 async def get_product_by_sku(session: SessionDep, sku: str) -> FullProductPublic:
@@ -369,16 +375,7 @@ async def get_product_by_sku(session: SessionDep, sku: str) -> FullProductPublic
                 }
             }
         },
-        status.HTTP_404_NOT_FOUND: {
-            "description": "Not Found",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "Product with sku 'ZS10220' not found!"
-                    }
-                }
-            }
-        }
+        status.HTTP_404_NOT_FOUND: example_sku_notfound
     }
 )
 async def update_base_product(
@@ -426,16 +423,7 @@ async def update_base_product(
                 }
             }
         },
-        status.HTTP_404_NOT_FOUND:{
-            "description": "Not Found",
-            "content": {
-                "application/json":{
-                    "example":{
-                        "detail": "Variant with variant_id '206' not found!"
-                    }
-                }
-            }
-        }
+        status.HTTP_404_NOT_FOUND: example_variant_notfound
     }
 )
 async def update_product_variant(
@@ -464,5 +452,49 @@ async def update_product_variant(
 
     # Return the updated product variant
     return updated_product_variant
+###################################################################################################
+
+###################################################################################################
+# Update a product variant availability
+@router.patch(
+    "/{sku}/status",
+    response_model=ProductBasePublic,
+    responses={
+        status.HTTP_200_OK:{
+            "description": "OK",
+            "content": {
+                "application/json":{
+                    "example":{
+                        "product_id": 18,
+                        "sku": "SH0014",
+                        "product_name": "Eco Cotton T-Shirt",
+                        "brand": "Patagonia",
+                        "product_category_id": 1,
+                        "available": False
+                    }
+                }
+            }
+        },
+        status.HTTP_404_NOT_FOUND: example_variant_notfound
+    }
+)
+async def change_product_availability(
+    session: SessionDep,
+    sku: str,
+    available: Annotated[bool, Query()]
+) -> ProductBasePublic:
+    
+    # Deactivate product if availability=False
+    if available is False:
+        product_variant = ProductCrud.deactivate_product(session, sku)
+
+    if available is True:
+        product_variant = ProductCrud.reactivate_product(session, sku)
+    
+    # Return the product
+    return product_variant
+###################################################################################################
+
+
 
 ###################################################################################################

@@ -519,7 +519,7 @@ class ProductCrud():
 
 
     @staticmethod
-    def deactivate_product(session: Session, sku: str) -> ProductBasePublic:
+    def deactivate_product(session: Session, sku: str) -> Products:
         
         """
         Deactivates a base product turning the available field to False.
@@ -529,16 +529,11 @@ class ProductCrud():
             sku (str): The product's sku.
         
         Returns:
-            A ProductBasePublic.
+            A Products object.
         """
-        # Get the product
-        product = session.exec(
-            select(Products).where(Products.sku == sku)
-        ).first()
 
-        # Raise exception if the sku couldn't match any product
-        if not product:
-            raise ProductNotFoundError(sku=sku)
+        # Get the product
+        product = ProductCrud.get_base_product_by_sku(session, sku)
         
         # Deactivate the product turning available field to False
         product.available = False
@@ -548,10 +543,7 @@ class ProductCrud():
         session.commit()
         session.refresh(product)
 
-        # Create and return a ProductBasePublic
-        product_public = ProductBasePublic.model_validate(product)
-
-        return product_public
+        return product
     
 
     @staticmethod
