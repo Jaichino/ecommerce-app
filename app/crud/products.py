@@ -55,8 +55,12 @@ class ProductCrud():
         if not category:
             raise CategoryNotFoundError(category_id=product_db.product_category_id)
 
-        # Verify if the product already exists in database
-        product_exists = ProductCrud.get_base_product_by_sku(session, product_db.sku)
+
+        try:
+            # Verify if the product already exists in database
+            product_exists = ProductCrud.get_base_product_by_sku(session, product_db.sku)
+        except ProductNotFoundError:
+            product_exists = None
 
         # If the product exists and is not available, then reactive it.
         if product_exists and product_exists.available is False:

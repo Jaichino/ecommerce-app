@@ -68,6 +68,7 @@ class UserPublic(BaseModel):
     lastname: str
     user_dni: int
     user_email: str
+    role: str
     is_active: bool
 
 
