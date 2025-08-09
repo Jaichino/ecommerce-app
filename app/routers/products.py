@@ -12,14 +12,14 @@ from fastapi import APIRouter, Depends, status, Body, Query
 
 from app.db.database import get_session
 
-
-
 from app.schemas.products import (
     ProductBaseCreate, ProductBasePublic, ProductVariantPublic, ProductVariantCreate,
     ProductUpdate, FullProductPublic, ProductVariantUpdate
 )
 
 from app.crud.products import ProductCrud
+
+from app.auth.auth import required_role
 
 ###################################################################################################
 
@@ -82,6 +82,7 @@ example_category_notfound = {
         "",
         response_model=ProductBasePublic,
         status_code=status.HTTP_201_CREATED,
+        dependencies=[Depends(required_role("admin"))],
         responses={
             status.HTTP_201_CREATED:{
                 "description": "Created",

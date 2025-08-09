@@ -45,12 +45,12 @@ class UsersCrud():
         """
         
         # Verify if the user email exists, raise an exception if the email already exists
-        email_exists = UsersCrud.get_user_by_email(session, user_email=user_create.user_email)
+        email_exists = UsersCrud.get_fulluser_by_email(session, user_email=user_create.user_email)
         if email_exists:
             raise UserAlreadyExistsError(field="email")
 
         # Verify if the user_dni exists, raise an exception if the dni already exists
-        dni_exists = UsersCrud.get_user_by_dni(session, user_dni=user_create.user_dni)
+        dni_exists = UsersCrud.get_fulluser_by_dni(session, user_dni=user_create.user_dni)
         if dni_exists:
             raise UserAlreadyExistsError(field="dni")
 
@@ -127,9 +127,57 @@ class UsersCrud():
 
     ###############################################################################################
     # Read
+
+    @staticmethod
+    def get_user_public(session: Session, user_email: str) -> UserPublic | None:
+        
+        """
+        Gets a UserPublic object by passing the user email.
+
+        Args:
+                session (Session): The SQLModel session to interact with the database.
+                user_email (str): The user's email.
+            
+        Returns:
+            A UserPublic or None if there's no user with the user_email.
+        """
+        user = session.exec(
+            select(User).where(User.user_email == user_email)
+        ).first()
+
+        if not user:
+            return None
+        
+        user_public = UserPublic(**user.model_dump())
+
+        return user_public
+
+
+    @staticmethod
+    def get_user_db(session: Session, user_email: str) -> User | None:
+
+        """ Gets a database user object by passing the user email.
+
+            Args:
+                session (Session): The SQLModel session to interact with the database.
+                user_email (str): The user's email.
+            
+            Returns:
+                A database User or None if there's no user with the user_email.
+        """
+
+        user = session.exec(
+            select(User).where(User.user_email == user_email)
+        ).first()
+
+        if not user:
+            return None
+        
+        return user
+
     
     @staticmethod
-    def get_user_by_dni(session: Session, user_dni: int) -> FullUserPublic:
+    def get_fulluser_by_dni(session: Session, user_dni: int) -> FullUserPublic:
 
         """
         Gets a user's information passing their dni number.
@@ -174,7 +222,7 @@ class UsersCrud():
 
 
     @staticmethod
-    def get_user_by_email(session: Session, user_email: str) -> FullUserPublic:
+    def get_fulluser_by_email(session: Session, user_email: str) -> FullUserPublic:
 
         """
         Gets a user's information passing their email.
