@@ -128,11 +128,7 @@ class ProductCrud():
         """
         
         # Get the product with the sku
-        product = session.exec(select(Products).where(Products.sku == sku)).first()
-
-        # Raise exception if the product doesn't exist (not match the sku)
-        if not product:
-            raise ProductNotFoundError(sku=sku)
+        product = ProductCrud.get_base_product_by_sku(session, sku)
 
         # Validate the ProductVariantCreate as a ProductVariant, adding product_id
         variant_db = ProductVariant(**product_variant.model_dump(), product_id=product.product_id)
@@ -598,11 +594,7 @@ class ProductCrud():
         """
 
         # Get the variant
-        variant = session.get(ProductVariant, variant_id)
-
-        # Raise exception if there's no variant
-        if not variant:
-            raise ProductVariantNotFoundError(variant_id=variant_id)
+        variant = ProductCrud.get_variant_info(session, variant_id)
         
         # Raise exception if stock < quantity_substracted
         if variant.stock < quantity_substracted:
@@ -644,7 +636,7 @@ class ProductCrud():
     
     
     @staticmethod
-    def delete_category(session: Session, category_id: int) -> CategoryPublic:
+    def delete_category(session: Session, category_id: int) -> ProductCategory:
 
         """
         Deletes a product category by passing its category_id.
@@ -654,7 +646,7 @@ class ProductCrud():
             category_id (int): The category's id.
         
         Returns:
-            A CategoryPublic object.
+            A ProductCategory object.
         """
 
         # Get the category to delete
@@ -670,8 +662,8 @@ class ProductCrud():
         session.delete(category_to_delete)
         session.commit()
 
-        # Return a CategoryPublic object
-        return CategoryPublic.model_validate(category_to_delete)
+        # Return the deleted category
+        return category_to_delete
 
 
     @staticmethod

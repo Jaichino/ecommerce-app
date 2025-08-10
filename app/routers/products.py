@@ -133,6 +133,7 @@ async def create_base_product(
 @router.post(
     "/{sku}/variants",
     summary="Creates a new product variant",
+    dependencies=[Depends(required_role("admin"))],
     response_model=ProductVariantPublic,
     status_code=status.HTTP_201_CREATED,
     responses={
@@ -360,6 +361,7 @@ async def get_product_by_sku(session: SessionDep, sku: str) -> FullProductPublic
 @router.patch(
     "/{sku}",
     response_model=ProductBasePublic,
+    dependencies=[Depends(required_role("admin"))],
     responses={
         status.HTTP_200_OK:{
             "description": "OK",
@@ -408,6 +410,7 @@ async def update_base_product(
 @router.patch(
     "/variants/{variant_id}",
     response_model=ProductVariantPublic,
+    dependencies=[Depends(required_role("admin"))],
     responses={
         status.HTTP_200_OK:{
             "description": "OK",
@@ -460,6 +463,7 @@ async def update_product_variant(
 @router.patch(
     "/{sku}/status",
     response_model=ProductBasePublic,
+    dependencies=[Depends(required_role("admin"))],
     responses={
         status.HTTP_200_OK:{
             "description": "OK",
@@ -507,6 +511,7 @@ async def change_product_availability(
 @router.delete(
     "/{sku}",
     response_model=ProductBasePublic,
+    dependencies=[Depends(required_role("admin"))],
     responses={
         status.HTTP_200_OK: {
             "description": "OK",
@@ -546,6 +551,7 @@ async def delete_base_product(session: SessionDep, sku: str) -> ProductBasePubli
 @router.delete(
     "/variants/{variant_id}",
     response_model=ProductVariantPublic,
+    dependencies=[Depends(required_role("admin"))],
     responses={
         status.HTTP_200_OK: {
             "description": "OK",
