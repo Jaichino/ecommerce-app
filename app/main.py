@@ -21,6 +21,7 @@ from app.exception_handlers import productvariantnotfound_exception_handler
 
 from app.routers import login
 from app.routers import products
+from app.routers import product_categories
 
 ###################################################################################################
 
@@ -45,9 +46,8 @@ app.add_exception_handler(ProductVariantNotFoundError, productvariantnotfound_ex
 ###################################################################################################
 # Routers
 app.include_router(products.router)
+app.include_router(product_categories.router)
 app.include_router(login.router)
-
-
 
 ###################################################################################################
 

@@ -114,7 +114,7 @@ async def create_base_product(
             }
         )
     ]
-) -> ProductBasePublic:
+):
     
     """
     Creates a new base product by passing a JSON object with fields like sku, product name,
@@ -385,7 +385,7 @@ async def update_base_product(
     session: SessionDep, 
     sku: str, 
     product_update: Annotated[ProductUpdate, Body(example={"product_name": "Athletic Tee"})]
-) -> ProductBasePublic:
+):
     
     """
     Updates a base product by passing its sku and the fields to be updated, like product name, 
@@ -437,7 +437,7 @@ async def update_product_variant(
         ProductVariantUpdate, 
         Body(example={"stock": 10, "price": 86000.00})
     ]
-) -> ProductVariantPublic:
+):
     
     """
     Updates a product variant by passing its id and the data to modify the product, like price or stock.
@@ -531,7 +531,7 @@ async def change_product_availability(
         status.HTTP_404_NOT_FOUND: example_sku_notfound
     }
 )
-async def delete_base_product(session: SessionDep, sku: str) -> ProductBasePublic:
+async def delete_base_product(session: SessionDep, sku: str):
     
     """
     Deletes a base product by passing its sku.
@@ -571,7 +571,7 @@ async def delete_base_product(session: SessionDep, sku: str) -> ProductBasePubli
         status.HTTP_404_NOT_FOUND: example_variant_notfound
     }
 )
-async def delete_product_variant(session: SessionDep, variant_id: int) -> ProductVariantPublic:
+async def delete_product_variant(session: SessionDep, variant_id: int):
 
     """
     Deletes a product variant info by passing the variant_id.

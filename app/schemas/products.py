@@ -35,7 +35,14 @@ class ProductVariantCreate(BaseModel):
 class CategoryCreate(BaseModel):
     category: str
 
-    model_config = {"extra": "forbid"}
+    model_config = {
+        "extra": "forbid",
+        "json_schema_extra":{
+            "example": {
+                "category": "SHIRTS"
+            }
+        }
+    }
 
 
 class ProductUpdate(BaseModel):
