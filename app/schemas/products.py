@@ -57,7 +57,14 @@ class ProductUpdate(BaseModel):
 class CategoryUpdate(BaseModel):
     category: str | None = None
 
-    model_config = {"extra": "forbid"}
+    model_config = {
+        "extra": "forbid",
+        "json_schema_extra": {
+            "example":{
+                "category": "SHIRT"
+            }
+        }
+    }
 
 
 class ProductVariantUpdate(BaseModel):

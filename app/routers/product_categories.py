@@ -8,7 +8,7 @@
 
 from typing import Annotated
 from sqlmodel import Session
-from fastapi import APIRouter, Depends, status, Body, Query
+from fastapi import APIRouter, Depends, status
 
 from app.db.database import get_session
 
@@ -52,6 +52,30 @@ example_category_notfound = {
                 }
 }
 
+example_list_categories = {
+    "application/json":{
+        "example":[
+            {
+                "category_id": 1,
+                "category": "SHIRTS"
+            },
+            {
+                "category_id": 3,
+                "category": "T-SHIRTS"
+            }
+        ]
+    }
+}
+
+example_one_category = {
+    "application/json":{
+        "example":{
+            "category_id": 1,
+            "category": "SHIRTS"
+        }
+    }
+}
+
 ###################################################################################################
 
 ###################################################################################################
@@ -63,17 +87,11 @@ example_category_notfound = {
     "",
     response_model=CategoryPublic,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(required_role("admin"))],
     responses={
         status.HTTP_201_CREATED:{
             "description": "Created",
-            "content":{
-                "application/json":{
-                    "example":{
-                        "category_id": 1,
-                        "category": "SHIRTS"
-                    }
-                }
-            }
+            "content": example_one_category
         }
     }
 )
@@ -89,5 +107,107 @@ async def create_product_category(session: SessionDep, category: CategoryCreate)
 
     # Return the created category
     return product_category
+
+###################################################################################################
+
+###################################################################################################
+
+
+###################################################################################################
+# GET ENDPOINTS
+
+###################################################################################################
+# Get the product categories
+@router.get(
+    "",
+    response_model = list[CategoryPublic],
+    dependencies=[Depends(required_role("admin"))],
+    responses={
+        status.HTTP_200_OK:{
+            "description": "OK",
+            "content": example_list_categories
+        }
+    }
+)
+async def get_product_categories(session: SessionDep):
+    """
+    Gets all the product categories.
+    """
+    # Get the categories
+    categories = ProductCrud.get_categories(session=session)
+
+    # Return the categories
+    return categories
+###################################################################################################
+
+###################################################################################################
+
+
+###################################################################################################
+# UPDATE ENDPOINTS
+
+###################################################################################################
+# Update a category
+@router.patch(
+    "/{category_id}",
+    response_model=CategoryPublic,
+    dependencies=[Depends(required_role("admin"))],
+    responses={
+        status.HTTP_200_OK:{
+            "description": "OK",
+            "content": example_one_category
+        }
+    }
+)
+async def update_product_category(
+    session: SessionDep,
+    category_id: int,
+    category_update: CategoryUpdate
+):
+    """
+    Update a product category by passing its id number and the fields to be modified, like the
+    category name.
+
+    - **category_id (int)**: The id number of product category.
+    - **category_update (CategoryUpdate)**: Data to modify the category.
+    """
+
+    # Update the category
+    updated_category = ProductCrud.update_category(session, category_id, category_update)
+
+    # Return the updated category
+    return updated_category
+
+###################################################################################################
+
+###################################################################################################
+
+
+###################################################################################################
+# DELETE ENDPOINTS
+
+###################################################################################################
+# Delete a product category
+@router.delete(
+    "/{category_id}",
+    response_model=CategoryPublic,
+    dependencies=[Depends(required_role("admin"))],
+    responses={
+        status.HTTP_200_OK:{
+            "description": "OK",
+            "content": example_one_category
+        },
+        status.HTTP_404_NOT_FOUND:example_category_notfound
+    }
+)
+async def delete_product_category(session: SessionDep, category_id: int):
+
+    # Delete the product category
+    deleted_category = ProductCrud.delete_category(session, category_id)
+
+    # Return the deleted category
+    return deleted_category
+###################################################################################################
+
 
 ###################################################################################################

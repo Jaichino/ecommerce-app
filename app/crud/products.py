@@ -394,20 +394,22 @@ class ProductCrud():
 
 
     @staticmethod
-    def get_categories(session: Session) -> list[ProductCategory] | None:
+    def get_categories(session: Session) -> list[ProductCategory]:
 
         """
         Gets all the existing product categories. If there is no category, return None.
+
+        Args:
+            session (Session): The SQLModel session to interact with the database.
+
+        Returns:
+            A list of product categories.
         """
 
         # Get all the categories ordered by name
         categories = session.exec(
             select(ProductCategory).order_by(ProductCategory.category)
         ).all()
-
-        # Return None if there is no category
-        if not categories:
-            return None
 
         # Return the categories
         return categories
@@ -454,7 +456,7 @@ class ProductCrud():
         session: Session, 
         category_id: int,
         category_update: CategoryUpdate
-    ) -> CategoryPublic:
+    ) -> ProductCategory:
         
         """
         Updates an existing product category by passing its category_id and an object 
@@ -478,14 +480,20 @@ class ProductCrud():
         if not category_to_update:
             raise CategoryNotFoundError(category_id=category_id)
         
+        # Uppercase to the category name
+        category_update.category = category_update.category.upper()
+        
+        # Exclude unset fields from category_update
+        update_data = category_update.model_dump(exclude_unset=True)
+        
         # Update the category
-        category_to_update.sqlmodel_update(category_update)
+        category_to_update.sqlmodel_update(update_data)
         session.add(category_to_update)
         session.commit()
         session.refresh(category_to_update)
 
-        # Return a CategoryPublic
-        return CategoryPublic.model_validate(category_to_update)
+        # Return the updated category
+        return category_to_update
 
 
     @staticmethod
